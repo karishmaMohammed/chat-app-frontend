@@ -1,100 +1,202 @@
-import React, { useState } from "react";
-import "./MainStyles.css";
-import SearchIcon from "@mui/icons-material/Search";
-import AddCircleOutlineOutlinedIcon from "@mui/icons-material/AddCircleOutlineOutlined";
-import NightlightOutlinedIcon from "@mui/icons-material/NightlightOutlined";
-import GroupAddOutlinedIcon from "@mui/icons-material/GroupAddOutlined";
-import PersonAddAltOutlinedIcon from "@mui/icons-material/PersonAddAltOutlined";
-import LightModeIcon from "@mui/icons-material/LightMode";
+import React, { useContext, useEffect, useState } from "react";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { IconButton } from "@mui/material";
-import ConversationItems from "./ConversationItems";
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import GroupAddIcon from "@mui/icons-material/GroupAdd";
+import NightlightIcon from "@mui/icons-material/Nightlight";
+import LightModeIcon from "@mui/icons-material/LightMode";
+import ExitToAppIcon from "@mui/icons-material/ExitToApp";
+import AddCircleIcon from "@mui/icons-material/AddCircle";
+import SearchIcon from "@mui/icons-material/Search";
 import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { toggleTheme } from "../Features/themeSlice";
+import axios from "axios";
+import { refreshSidebarFun } from "../Features/refreshSidebar";
+import { myContext } from "./MainContainer";
 
-function SideBar() {
-  
-  const [conversations, setConversations] = useState([
-    {
-      name: "Karishma",
-      lastMessage: "last Message #1",
-      timeStamp: "yesterday",
-    },
-    {
-      name: "Madhav",
-      lastMessage: "last Message #2",
-      timeStamp: "yesterday",
-    },
-    {
-      name: "Ishu",
-      lastMessage: "last Message #3",
-      timeStamp: "Today",
-    },
-  ]);
-  const [lightTheme, setLightTheme] = useState(true);
-
+function Sidebar() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const lightTheme = useSelector((state) => state.themeKey);
+  // const refresh = useSelector((state) => state.refreshKey);
+  const { refresh, setRefresh } = useContext(myContext);
+  console.log("Context API : refresh : ", refresh);
+  const [conversations, setConversations] = useState([]);
+  // console.log("Conversations of Sidebar : ", conversations);
+  const userData = JSON.parse(localStorage.getItem("userData"));
+  // console.log("Data from LocalStorage : ", userData);
+  const nav = useNavigate();
+  if (!userData) {
+    console.log("User not Authenticated");
+    nav("/");
+  }
+
+  const user = userData.data;
+  useEffect(() => {
+    // console.log("Sidebar : ", user.token);
+    const config = {
+      headers: {
+        Authorization: `Bearer ${user.token}`,
+      },
+    };
+
+    axios.get("http://localhost:8080/chat/", config).then((response) => {
+      console.log("Data refresh in sidebar ", response.data);
+      setConversations(response.data);
+      // setRefresh(!refresh);
+    });
+  }, [refresh]);
+
   return (
-    <div className="sidebar-content">
-      <div className={"sidebar-header" + ((lightTheme)? "" : "dark")}>
-        <div>
-          <IconButton>
-            <AccountCircleIcon />
+    <div className="sidebar-container">
+      <div className={"sb-header" + (lightTheme ? "" : " dark")}>
+        <div className="other-icons">
+          <IconButton
+            onClick={() => {
+              nav("/app/welcome");
+            }}
+          >
+            <AccountCircleIcon
+              className={"icon" + (lightTheme ? "" : " dark")}
+            />
           </IconButton>
-        </div>
-        <div>
+
           <IconButton
             onClick={() => {
               navigate("users");
             }}
           >
-            <PersonAddAltOutlinedIcon />
+            <PersonAddIcon className={"icon" + (lightTheme ? "" : " dark")} />
           </IconButton>
           <IconButton
             onClick={() => {
               navigate("groups");
             }}
           >
-            <GroupAddOutlinedIcon />
+            <GroupAddIcon className={"icon" + (lightTheme ? "" : " dark")} />
           </IconButton>
           <IconButton
             onClick={() => {
               navigate("create-groups");
             }}
           >
-            <AddCircleOutlineOutlinedIcon />
+            <AddCircleIcon className={"icon" + (lightTheme ? "" : " dark")} />
+          </IconButton>
+
+          <IconButton
+            onClick={() => {
+              dispatch(toggleTheme());
+            }}
+          >
+            {lightTheme && (
+              <NightlightIcon
+                className={"icon" + (lightTheme ? "" : " dark")}
+              />
+            )}
+            {!lightTheme && (
+              <LightModeIcon className={"icon" + (lightTheme ? "" : " dark")} />
+            )}
           </IconButton>
           <IconButton
             onClick={() => {
-              setLightTheme((prevValue) => {
-                return !prevValue;
-              });
+              localStorage.removeItem("userData");
+              navigate("/");
             }}
           >
-            {lightTheme && <NightlightOutlinedIcon />}
-            {!lightTheme && <LightModeIcon />}
+            <ExitToAppIcon className={"icon" + (lightTheme ? "" : " dark")} />
           </IconButton>
         </div>
       </div>
-      <div className="sidebar-search">
-        <IconButton>
+      <div className={"sb-search" + (lightTheme ? "" : " dark")}>
+        <IconButton className={"icon" + (lightTheme ? "" : " dark")}>
           <SearchIcon />
         </IconButton>
-
-        <input type="text" placeholder="Search" />
+        <input
+          placeholder="Search"
+          className={"search-box" + (lightTheme ? "" : " dark")}
+        />
       </div>
-      <div className="sidebar-conversations">
-        {conversations.map((conversation) => {
-          return (
-            <ConversationItems
-              props={conversation}
-              key={conversation.name}
-              onClick={() => navigate("chartArea")}
-            />
-          );
+      <div className={"sb-conversations" + (lightTheme ? "" : " dark")}>
+        {conversations.map((conversation, index) => {
+          // console.log("current convo : ", conversation);
+          if (conversation.users.length === 1) {
+            return <div key={index}></div>;
+          }
+          if (conversation.latestMessage === undefined) {
+            // console.log("No Latest Message with ", conversation.users[1]);
+            return (
+              <div
+                key={index}
+                onClick={() => {
+                  console.log("Refresh fired from sidebar");
+                  // dispatch(refreshSidebarFun());
+                  setRefresh(!refresh);
+                }}
+              >
+                <div
+                  key={index}
+                  className="conversation-container"
+                  onClick={() => {
+                    navigate(
+                      "chat/" +
+                        conversation._id +
+                        "&" +
+                        conversation.users[1].name
+                    );
+                  }}
+                  // dispatch change to refresh so as to update chatArea
+                >
+                  <p className={"con-icon" + (lightTheme ? "" : " dark")}>
+                    {conversation.users[1].name[0]}
+                  </p>
+                  <p className={"con-title" + (lightTheme ? "" : " dark")}>
+                    {conversation.users[1].name}
+                  </p>
+
+                  <p className="con-lastMessage">
+                    No previous Messages, click here to start a new chat
+                  </p>
+                  {/* <p className={"con-timeStamp" + (lightTheme ? "" : " dark")}>
+                {conversation.timeStamp}
+              </p> */}
+                </div>
+              </div>
+            );
+          } else {
+            return (
+              <div
+                key={index}
+                className="conversation-container"
+                onClick={() => {
+                  navigate(
+                    "chat/" +
+                      conversation._id +
+                      "&" +
+                      conversation.users[1].name
+                  );
+                }}
+              >
+                <p className={"con-icon" + (lightTheme ? "" : " dark")}>
+                  {conversation.users[1].name[0]}
+                </p>
+                <p className={"con-title" + (lightTheme ? "" : " dark")}>
+                  {conversation.users[1].name}
+                </p>
+
+                <p className="con-lastMessage">
+                  {conversation.latestMessage.content}
+                </p>
+                {/* <p className={"con-timeStamp" + (lightTheme ? "" : " dark")}>
+                {conversation.timeStamp}
+              </p> */}
+              </div>
+            );
+          }
         })}
       </div>
     </div>
   );
 }
 
-export default SideBar;
+export default Sidebar;

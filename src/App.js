@@ -1,31 +1,32 @@
 import React from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { Routes, Route } from "react-router-dom";
 import "./App.css";
-import MainContent from "./Components/MainContent";
+import MainContainer from "./Components/MainContainer";
 import Login from "./Components/Login";
-import WelcomePage from "./Components/WelcomePage";
+import { Route, Routes } from "react-router-dom";
+import Welcome from "./Components/Welcome";
 import ChatArea from "./Components/ChatArea";
 import Users from "./Components/Users";
-import Groups from "./Components/Groups";
 import CreateGroups from "./Components/CreateGroups";
+import Groups from "./Components/Groups";
+import { useDispatch, useSelector } from "react-redux";
 
 function App() {
   const dispatch = useDispatch();
   const lightTheme = useSelector((state) => state.themeKey);
   return (
-    <div className={"App" + (lightTheme ? " " : "-dark")}>
+    <div className={"App" + (lightTheme ? "" : "-dark")}>
+      {/* <MainContainer /> */}
+      {/* <Login /> */}
       <Routes>
         <Route path="/" element={<Login />} />
-        <Route path="chart" element={<MainContent />}>
-          <Route path="welcome" element={<WelcomePage />}></Route>
+        <Route path="app" element={<MainContainer />}>
+          <Route path="welcome" element={<Welcome />}></Route>
           <Route path="chat/:_id" element={<ChatArea />}></Route>
           <Route path="users" element={<Users />}></Route>
           <Route path="groups" element={<Groups />}></Route>
           <Route path="create-groups" element={<CreateGroups />}></Route>
         </Route>
       </Routes>
-      {/* <MainContent /> */}
     </div>
   );
 }
